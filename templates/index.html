@@ -181,16 +181,19 @@
 
 <script>
   function resetForm(){
-    document.getElementById('churnForm').reset();
+    // reload halaman ke kondisi awal (GET /)
+    window.location.href = "/";
   }
 
   function fillExample(){
+    // Isi contoh numerik
     const exNum = { tenure: 2, MonthlyCharges: 89.1, TotalCharges: 194.9 };
     Object.keys(exNum).forEach(k=>{
       const el = document.getElementById(k);
-      if(el) el.value = exNum[k];
+      if (el) el.value = exNum[k];
     });
 
+    // Isi contoh kategorikal (sesuaikan dengan pilihan dropdown di schema)
     const exCat = {
       gender: "Female",
       SeniorCitizen: "0",
@@ -212,11 +215,14 @@
 
     Object.keys(exCat).forEach(k=>{
       const el = document.getElementById(k);
-      if(el){
-        el.value = exCat[k];
-      }
+      if (el) el.value = exCat[k];
     });
+
+    // Scroll halus ke form biar user langsung lihat terisi (opsional, tidak mengubah tampilan)
+    const form = document.getElementById("churnForm");
+    if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 </script>
+
 </body>
 </html>
