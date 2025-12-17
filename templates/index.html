@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TA-11 ANN — Telco Customer Churn</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">AI</div>
+        <div>
+          <div class="brand-title">TA-11 • Artificial Neural Network</div>
+          <div class="brand-sub">Prediksi Telco Customer Churn (IBM Sample Dataset)</div>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <span class="badge">Flask</span>
+        <span class="badge">ANN</span>
+        <span class="badge">Preprocessing</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section class="hero">
+      <div class="hero-left">
+        <h1>Prediksi pelanggan akan <span class="accent">berhenti</span> atau <span class="accent">bertahan</span></h1>
+        <p class="muted">
+          Masukkan data pelanggan aktif untuk mengetahui tingkat risiko pelanggan tersebut akan berhenti berlangganan. Sistem menampilkan hasil berupa tingkat probabilitas dan status risiko berdasarkan analisis model ANN.
+        </p>
+
+        <div class="tips">
+          <div class="tip">
+            <div class="tip-icon">✓</div>
+            <div>
+              <div class="tip-title">Input terstandarisasi</div>
+              <div class="tip-desc">Setiap pilihan disediakan dalam bentuk dropdown untuk menghindari kesalahan pengisian data.</div>
+            </div>
+          </div>
+          <div class="tip">
+            <div class="tip-icon">⚡</div>
+            <div>
+              <div class="tip-title">Siap digunakan kapan saja</div>
+              <div class="tip-desc">Model dan proses pengolahan data telah disimpan sehingga prediksi dapat dilakukan secara langsung tanpa pelatihan ulang.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="result-card">
+          <div class="result-head">
+            <div>
+              <div class="result-title">Hasil Analisis Risiko</div>
+              <div class="result-sub">Estimasi kemungkinan pelanggan berhenti berlangganan</div>
+            </div>
+            <div class="pill">Sigmoid</div>
+          </div>
+
+          {% if error %}
+            <div class="alert alert-error">
+              <div class="alert-title">Terjadi error</div>
+              <div class="alert-body">{{ error }}</div>
+            </div>
+          {% endif %}
+
+          {% if pred_label %}
+            <div class="kpi">
+              <div class="kpi-label">Prediksi</div>
+              <div class="kpi-value">{{ pred_label }}</div>
+            </div>
+
+            <div class="kpi">
+              <div class="kpi-label">Probabilitas Churn</div>
+              <div class="kpi-value mono">{{ pred_prob }}</div>
+
+              <div class="meter" role="img" aria-label="Probability meter">
+                <div class="meter-bar" style="width: {{ (pred_prob * 100) | round(0) }}%;"></div>
+              </div>
+
+              <div class="meter-note">
+                0% <span class="spacer"></span> 50% <span class="spacer"></span> 100%
+              </div>
+            </div>
+          {% else %}
+            <div class="placeholder">
+              <div class="placeholder-icon">📈</div>
+              <div class="placeholder-title">Belum ada hasil analisis</div>
+              <div class="placeholder-sub">Silakan isi data pelanggan di bawah, lalu klik tombol <b>Prediksi</b> untuk melihat hasil analisis risiko.</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="mini-card">
+          <div class="mini-title">Catatan</div>
+          <div class="mini-text">
+            Sistem ini menggunakan model pembelajaran mesin yang telah dilatih sebelumnya. Hasil prediksi bergantung pada kelengkapan dan kesesuaian data yang dimasukkan.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-head">
+        <div>
+          <h2>Form Input Pelanggan</h2>
+          <p class="muted">Isi seakurat mungkin untuk hasil prediksi yang lebih baik.</p>
+        </div>
+        <div class="section-actions">
+          <button class="btn btn-ghost" type="button" onclick="fillExample()">Isi Contoh</button>
+          <button class="btn btn-ghost" type="button" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+
+      <form id="churnForm" method="POST" class="card">
+        <div class="grid two">
+          <div class="block">
+            <div class="block-title">Akun & Biaya</div>
+            <div class="grid inner">
+              {% for c in num_cols %}
+                <div class="field">
+                  <label for="{{ c }}">{{ c }}</label>
+                  <input
+                    id="{{ c }}"
+                    name="{{ c }}"
+                    type="number"
+                    step="any"
+                    placeholder="Masukkan {{ c }}"
+                    value="{{ form_data.get(c,'') }}"
+                    required
+                  />
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="block-title">Layanan & Demografi</div>
+            <div class="grid inner">
+              {% for c in cat_cols %}
+                <div class="field">
+                  <label for="{{ c }}">{{ c }}</label>
+                  <select id="{{ c }}" name="{{ c }}" required>
+                    {% set selected = form_data.get(c,'') %}
+                    <option value="" disabled {% if selected=='' %}selected{% endif %}>Pilih {{ c }}</option>
+                    {% for opt in cat_choices[c] %}
+                      <option value="{{ opt }}" {% if opt==selected %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Prediksi</button>
+          <div class="muted small">
+            Setelah submit, halaman akan menampilkan probabilitas churn dan label prediksi.
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <footer class="footer">
+      <div class="muted small">© TA-11 ANN • Telco Churn • Flask Deployment</div>
+    </footer>
+  </main>
+
+<script>
+  function resetForm(){
+    document.getElementById('churnForm').reset();
+  }
+
+  function fillExample(){
+    const exNum = { tenure: 2, MonthlyCharges: 89.1, TotalCharges: 194.9 };
+    Object.keys(exNum).forEach(k=>{
+      const el = document.getElementById(k);
+      if(el) el.value = exNum[k];
+    });
+
+    const exCat = {
+      gender: "Female",
+      SeniorCitizen: "0",
+      Partner: "No",
+      Dependents: "No",
+      PhoneService: "Yes",
+      MultipleLines: "No",
+      InternetService: "Fiber optic",
+      OnlineSecurity: "No",
+      OnlineBackup: "Yes",
+      DeviceProtection: "No",
+      TechSupport: "No",
+      StreamingTV: "Yes",
+      StreamingMovies: "Yes",
+      Contract: "Month-to-month",
+      PaperlessBilling: "Yes",
+      PaymentMethod: "Electronic check"
+    };
+
+    Object.keys(exCat).forEach(k=>{
+      const el = document.getElementById(k);
+      if(el){
+        el.value = exCat[k];
+      }
+    });
+  }
+</script>
+</body>
+</html>
